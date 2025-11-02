@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom UPI QR Code Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            animation: gradientShift 8s ease infinite;
+            background-size: 200% 200%;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            margin: 20px 0;
+            animation: slideUp 0.8s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shine 4s infinite linear;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .logo {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+        }
+        
+        .content {
+            padding: 35px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+        
+        label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        input {
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+            background: white;
+        }
+        
+        .amount-input {
+            position: relative;
+        }
+        
+        .amount-input span {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        .amount-input input {
+            padding-left: 45px;
+        }
+        
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 18px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .qr-container {
+            position: relative;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        .qr-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 4s infinite linear;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        #qrcode {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 256px;
+            height: 256px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .qr-placeholder {
+            width: 256px;
+            height: 256px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            border-radius: 10px;
+            color: #7f8c8d;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .qr-placeholder i {
+            font-size: 4rem;
+            color: #bdc3c7;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        button {
+            padding: 16px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .download-btn {
+            background: linear-gradient(to right, #27ae60, #219653);
+            color: white;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(39, 174, 96, 0.4);
+        }
+        
+        .reset-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .reset-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(231, 76, 60, 0.4);
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            text-align: center;
+            margin-top: 20px;
+            border-radius: 0 0 20px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dev-credit {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .dev-name {
+            font-weight: bold;
+            color: #3498db;
+            text-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            grid-column: 1 / -1;
+        }
+        
+        .instructions:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.7;
+        }
+        
+        .instructions li {
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+        }
+        
+        .instructions li:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .success-message {
+            background: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            animation: slideIn 0.5s ease;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .payment-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .payment-details p {
+            margin: 8px 0;
+            font-size: 0.95rem;
+            color: #2c3e50;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 15px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <i class="fas fa-qrcode logo"></i>
+            <h1>Custom UPI QR Code Generator</h1>
+            <p>Create personalized UPI payment QR codes with custom amounts</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="upiId"><i class="fas fa-user-circle"></i> Your UPI ID</label>
+                    <input type="text" id="upiId" placeholder="e.g., yourname@paytm">
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount"><i class="fas fa-rupee-sign"></i> Amount (Optional)</label>
+                    <div class="amount-input">
+                        <span>₹</span>
+                        <input type="number" id="amount" placeholder="Enter amount (leave blank for any amount)">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-signature"></i> Recipient Name (Optional)</label>
+                    <input type="text" id="name" placeholder="Enter recipient name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="purpose"><i class="fas fa-sticky-note"></i> Payment Purpose (Optional)</label>
+                    <input type="text" id="purpose" placeholder="e.g., Donation, Payment, etc.">
+                </div>
+                
+                <div class="payment-details">
+                    <p><strong>Note:</strong> This generates a valid UPI QR code that can be scanned by any UPI app.</p>
+                    <p>Test with apps like Google Pay, PhonePe, Paytm, etc.</p>
+                </div>
+            </div>
+            
+            <div class="qr-section">
+                <h3>Your UPI QR Code</h3>
+                <div class="qr-container">
+                    <div id="qrcode" class="qr-placeholder">
+                        <i class="fas fa-qrcode"></i>
+                        <p>QR Code will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i> QR Code Generated Successfully!
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="generate-btn" id="generateBtn">
+                        <i class="fas fa-bolt"></i> Generate QR Code
+                    </button>
+                    <button class="download-btn" id="downloadBtn" disabled>
+                        <i class="fas fa-download"></i> Download QR Code
+                    </button>
+                    <button class="reset-btn" id="resetBtn">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> How to Use</h3>
+                <ol>
+                    <li>Enter your UPI ID in the format: name@bank (e.g., yourname@paytm)</li>
+                    <li>Optionally enter an amount to create a fixed payment QR code</li>
+                    <li>Add recipient name and payment purpose for better tracking</li>
+                    <li>Click "Generate QR Code" to create your custom UPI QR code</li>
+                    <li>Download the QR code to share with others or print it</li>
+                    <li>Scan the QR code with any UPI app to make a payment</li>
+                </ol>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="dev-credit">
+                Developed with <i class="fas fa-heart" style="color: #e74c3c;"></i> by <span class="dev-name">Gandhi</span>
+            </div>
+            <p>© 2023 Custom UPI QR Generator. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const upiIdInput = document.getElementById('upiId');
+            const amountInput = document.getElementById('amount');
+            const nameInput = document.getElementById('name');
+            const purposeInput = document.getElementById('purpose');
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const qrcodeDiv = document.getElementById('qrcode');
+            const successMessage = document.getElementById('successMessage');
+            
+            let currentQRCode = null;
+            
+            // Generate QR Code
+            generateBtn.addEventListener('click', function() {
+                const upiId = upiIdInput.value.trim();
+                const amount = amountInput.value.trim();
+                const name = nameInput.value.trim();
+                const purpose = purposeInput.value.trim();
+                
+                if (!upiId) {
+                    alert('Please enter a valid UPI ID');
+                    return;
+                }
+                
+                // Validate UPI ID format
+                if (!isValidUPI(upiId)) {
+                    alert('Please enter a valid UPI ID in the format: name@provider');
+                    return;
+                }
+                
+                // Clear previous QR code
+                qrcodeDiv.innerHTML = '';
+                
+                // Build UPI URL according to NPCI standards
+                let upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}`;
+                
+                if (amount) {
+                    upiUrl += `&am=${amount}`;
+                }
+                
+                if (name) {
+                    upiUrl += `&pn=${encodeURIComponent(name)}`;
+                }
+                
+                if (purpose) {
+                    upiUrl += `&tn=${encodeURIComponent(purpose)}`;
+                }
+                
+                // Add currency (INR for India)
+                upiUrl += '&cu=INR';
+                
+                // Generate QR Code using qrcode-generator library
+                try {
+                    const typeNumber = 0; // Auto detect type
+                    const errorCorrectionLevel = 'H'; // High error correction
+                    
+                    const qr = qrcode(typeNumber, errorCorrectionLevel);
+                    qr.addData(upiUrl);
+                    qr.make();
+                    
+                    // Create canvas for QR code
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const cellSize = 5;
+                    const margin = 10;
+                    const size = qr.getModuleCount() * cellSize + margin * 2;
+                    
+                    canvas.width = size;
+                    canvas.height = size;
+                    
+                    // Draw background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    
+                    // Draw QR code
+                    ctx.fillStyle = '#000000';
+                    for (let row = 0; row < qr.getModuleCount(); row++) {
+                        for (let col = 0; col < qr.getModuleCount(); col++) {
+                            if (qr.isDark(row, col)) {
+                                ctx.fillRect(
+                                    col * cellSize + margin,
+                                    row * cellSize + margin,
+                                    cellSize,
+                                    cellSize
+                                );
+                            }
+                        }
+                    }
+                    
+                    // Add canvas to the QR code container
+                    qrcodeDiv.appendChild(canvas);
+                    currentQRCode = canvas;
+                    
+                    // Enable download button
+                    downloadBtn.disabled = false;
+                    
+                    // Show success message
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                    
+                } catch (error) {
+                    console.error('QR Code generation error:', error);
+                    alert('Error generating QR code. Please try again.');
+                }
+            });
+            
+            // Validate UPI ID format
+            function isValidUPI(upiId) {
+                const upiRegex = /^[a-zA-Z0-9.\-_]{2,49}@[a-zA-Z]{2,}$/;
+                return upiRegex.test(upiId);
+            }
+            
+            // Download QR Code
+            downloadBtn.addEventListener('click', function() {
+                if (!currentQRCode) {
+                    alert('Please generate a QR code first');
+                    return;
+                }
+                
+                const link = document.createElement('a');
+                link.download = 'upi-qr-code.png';
+                link.href = currentQRCode.toDataURL('image/png');
+                link.click();
+            });
+            
+            // Reset Form
+            resetBtn.addEventListener('click', function() {
+                upiIdInput.value = '';
+                amountInput.value = '';
+                nameInput.value = '';
+                purposeInput.value = '';
+                
+                if (currentQRCode) {
+                    qrcodeDiv.innerHTML = '<i class="fas fa-qrcode"></i><p>QR Code will appear here</p>';
+                    currentQRCode = null;
+                }
+                
+                downloadBtn.disabled = true;
+                successMessage.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
